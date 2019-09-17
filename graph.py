@@ -143,6 +143,53 @@ class Graph:
 
             print(linha)
 
+    def hierholzer(self):
+        arestas = {}
+
+        for i in range(1, self.V + 1):
+            arestas[i] = self.vizinhos(i)
+
+        n_impares = 0
+        ultimo_impar = 1
+        for i in range(1, self.V + 1):
+            if (len(arestas[i]) % 2 != 0):
+                n_impares += 1
+                ultimo_impar = i
+
+        if (n_impares > 2 or n_impares == 1):
+            print (0)
+            return
+
+        caminho_atual = []
+
+        caminho_atual.append(ultimo_impar)
+        v_atual = ultimo_impar
+
+        ciclo = []
+
+        while (len(caminho_atual) != 0):
+            if (len(arestas[v_atual]) > 0):
+                caminho_atual.append(v_atual)
+
+                v_prox = arestas[v_atual].pop(0)
+
+                arestas[v_prox].remove(v_atual)
+
+                v_atual = v_prox
+            else:
+                ciclo.append(v_atual)
+
+                v_atual = caminho_atual.pop()
+
+        resultado = ""
+        for i in range(len(ciclo)-1, -1, -1):
+            if (i != 0):
+                resultado = resultado + str(ciclo[i]) + ","
+            else:
+                resultado = resultado + str(ciclo[i])
+        print (resultado)
+
+
     def floydWarshall(self):
         # vamos usar apenas duas matrizes para o problema
         matriz0 = []
@@ -183,6 +230,7 @@ nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 grafo.dijkstra(2)
 grafo.floydWarshall()
+grafo.hierholzer()
 # print (grafo.adj)
 # print(grafo.qtdArestas())
 # print(grafo.rotulos)
