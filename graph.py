@@ -68,40 +68,31 @@ class Graph:
     def peso(self, u, v):
         return self.adj[u][v]
 
-    # ExErCiCiO DoIs
-    # def BFS(self, source):
-    #     visited = [False] * (self.V + 1)
-    #     distances = [-1] * (self.V + 1)
-    #     parents = [None] * (self.V + 1)
-    #     visited[source] = True
-    #     distances[source] = 0
-    #     queue = []
-    #     niveis = {0 : [source], }
-    #     queue.append(source)
-    #     while (len(queue) != 0):
-    #         u = queue.pop(0)
-    #         vizinhos = self.vizinhos(u)
-    #         for v in vizinhos:
-    #             if not visited[v]:
-    #                 visited[v] = True
-    #                 distances[v] = distances[u] + 1
-    #                 if (distances[u] + 1 not in niveis.keys()):
-    #                     niveis[distances[u] + 1] = [v]
-    #                 else:
-    #                     niveis[distances[u] + 1].append(v)
-    #                 parents[v] = u
-    #                 queue.append(v)
-    #     for i in sorted(niveis.keys()):
-    #         result = str(i) + ": "
-    #         first = True
-    #         for v in niveis[i]:
-    #             if (first):
-    #                 result += str(v)
-    #                 first = False
-    #             else:
-    #                 result += "," + str(v)
-    #         print(result)
+    def bfs(self, s):
+        visitados = [False] * (self.V + 1)
+        distancia = [(float("inf"))] * (self.V + 1)
 
+        visitados[s] = True
+        distancia[s] = 0
+
+        fila = []
+        fila.append(s)
+
+        linha = "0: " + str(s) + ","
+        nivel_atual = 0
+        while (len(fila) != 0):
+            u = fila.pop(0)
+            for v in self.vizinhos(u):
+                if (not visitados[v]):
+                    visitados[v] = True
+                    distancia[v] = distancia[u] + 1
+                    if (distancia[v] > nivel_atual):
+                        nivel_atual += 1
+                        print(linha[:-1])
+                        linha = str(nivel_atual) + ": "
+                    linha = linha + str(v) + ","
+                    fila.append(v)
+        print(linha[:-1])
 
     def menor(self, distancias, visitados):
         max = float("Inf")
@@ -197,6 +188,8 @@ class Graph:
         for _ in range(self.V + 1):
             matriz0.append([float("inf")] * (self.V + 1))
             matriz1.append([float("inf")] * (self.V + 1))
+
+        # inicializamos a primeira matriz tal como a função W
         for i in range(len(matriz0)):
             for j in range(len(matriz0)):
                 if (i == j):
@@ -204,12 +197,16 @@ class Graph:
                 else:
                     matriz0[i][j] = self.adj[i][j]
         distancias = [matriz0, matriz1]
+
+        # fazemos o loop principal de Floyd Warshall
         for k in range(1, self.V + 1):
             m = k % 2
             for u in range(1, self.V + 1):
                 for v in range(1, self.V + 1):
                     distancias[m][u][v] = min(distancias[1-m][u][v],
                                           distancias[1-m][u][k] + distancias[1-m][k][v])
+
+        # a matriz com as respostas é a m_res
         m_res = self.V % 2
         resposta = ""
         for s in range(1, self.V + 1):
@@ -228,9 +225,10 @@ class Graph:
 # ler objeto
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
-grafo.dijkstra(2)
-grafo.floydWarshall()
-grafo.hierholzer()
+grafo.bfs(4)
+# grafo.dijkstra(2)
+# grafo.floydWarshall()
+# grafo.hierholzer()
 # print (grafo.adj)
 # print(grafo.qtdArestas())
 # print(grafo.rotulos)
