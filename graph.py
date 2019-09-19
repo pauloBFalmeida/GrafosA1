@@ -5,15 +5,16 @@ class Graph:
         nVertices = int(linhaInicial[1])
         self.V = nVertices
         self.E = 0
-        self.adj = []
-        for _ in range(self.V + 1):
-            self.adj.append([float("inf")] * (self.V + 1))
+        self.v_adj = {}
+        for i in range(1, self.V + 1):
+            self.v_adj[i] = []
+        self.arestas = {}
         self.rotulos = {}
 
         for i in range(nVertices):
-            linha = file.readline().split()
+            linha = file.readline().split(' ', 1)
             numero = int(linha[0])
-            rotulo = linha[1]
+            rotulo = linha[1][:-1]
             self.addVertice(numero, rotulo)
         linhaEdges = file.readline()
         while True:
@@ -23,7 +24,7 @@ class Graph:
                 a, b, peso = linha.split()
                 a, b = map(int, [a, b])
                 peso = float(peso)
-                self.addEdge(a, b, peso)
+                self.addAresta(a, b, peso)
             except EOFError:
                 break
         file.close()
@@ -32,9 +33,11 @@ class Graph:
     def addVertice(self, num, rotulo):
         self.rotulos[num] = rotulo
 
-    def addEdge(self, a, b, peso):
-        self.adj[a][b] = peso
-        self.adj[b][a] = peso
+    def addAresta(self, a, b, peso):
+        self.v_adj[a].append(b)
+        self.v_adj[b].append(a)
+        self.arestas[(a, b)] = peso
+        self.arestas[(b, a)] = peso
         self.E += 1
 
     def qtdVertices(self):
@@ -44,29 +47,23 @@ class Graph:
         return self.E
 
     def grau(self, v):
-        grau = 0
-        for u in range(1, self.V + 1):
-            if (self.adj[v][u] < float("inf")):
-                grau += 1
-        return grau
+        return len(self.v_adj[v])
 
     def rotulo(self, v):
         return self.rotulos[v]
 
     def vizinhos(self, v):
-        vizinhos = []
-        for u in range(1, self.V + 1):
-            if (self.adj[v][u] < float("inf")):
-                vizinhos.append(u)
-        return vizinhos
+        return self.v_adj[v].copy()
 
     def haAresta(self, u, v):
-        if (self.adj[u][v] < float("inf")):
+        if (v in self.v_adj[u]):
             return True
         return False
 
     def peso(self, u, v):
-        return self.adj[u][v]
+        if (v in self.v_adj[u]):
+            return self.arestas[(u, v)]
+        return (float("inf"))
 
     def bfs(self, s):
         visitados = [False] * (self.V + 1)
@@ -78,7 +75,7 @@ class Graph:
         fila = []
         fila.append(s)
 
-        linha = "0: " + str(s) + ","
+        linha = "0: " + self.rotulos[s] + ","
         nivel_atual = 0
         while (len(fila) != 0):
             u = fila.pop(0)
@@ -90,7 +87,7 @@ class Graph:
                         nivel_atual += 1
                         print(linha[:-1])
                         linha = str(nivel_atual) + ": "
-                    linha = linha + str(v) + ","
+                    linha = linha + self.rotulos[v] + ","
                     fila.append(v)
         print(linha[:-1])
 
@@ -102,7 +99,6 @@ class Graph:
                 max = distancias[i]
                 max_v = i
         return max_v
-
 
     def dijkstra(self, s):
 
@@ -124,13 +120,15 @@ class Graph:
 
         # printa as informações
         for i in range(1, self.V + 1):
-            linha = str(i) + "; d=" + str(distancias[i])
+            if (distancias[i] < float("inf")):
+                distancias[i] = int(distancias[i])
+            linha = self.rotulos[i] + "; d=" + str(distancias[i])
             vertice = i
 
             while (ancestrais[vertice] != None):
                 vertice = ancestrais[vertice]
-                linha = str(vertice) + "," + linha
-            linha = str(i) + ": " + linha
+                linha = self.rotulos[vertice] + "," + linha
+            linha = self.rotulos[i] + ": " + linha
 
             print(linha)
 
@@ -141,20 +139,19 @@ class Graph:
             arestas[i] = self.vizinhos(i)
 
         n_impares = 0
-        ultimo_impar = 1
         for i in range(1, self.V + 1):
             if (len(arestas[i]) % 2 != 0):
                 n_impares += 1
-                ultimo_impar = i
 
-        if (n_impares > 2 or n_impares == 1):
+        if (n_impares >= 1):
             print (0)
             return
 
         caminho_atual = []
 
-        caminho_atual.append(ultimo_impar)
-        v_atual = ultimo_impar
+        # podemos começar de um vértice arbitrário
+        caminho_atual.append(1)
+        v_atual = 1
 
         ciclo = []
 
@@ -175,9 +172,9 @@ class Graph:
         resultado = ""
         for i in range(len(ciclo)-1, -1, -1):
             if (i != 0):
-                resultado = resultado + str(ciclo[i]) + ","
+                resultado = resultado + self.rotulos[ciclo[i]] + ","
             else:
-                resultado = resultado + str(ciclo[i])
+                resultado = resultado + self.rotulos[ciclo[i]]
         print (resultado)
 
 
@@ -190,12 +187,12 @@ class Graph:
             matriz1.append([float("inf")] * (self.V + 1))
 
         # inicializamos a primeira matriz tal como a função W
-        for i in range(len(matriz0)):
-            for j in range(len(matriz0)):
+        for i in range(1, self.V + 1):
+            for j in range(1, self.V + 1):
                 if (i == j):
                     matriz0[i][j] = 0
-                else:
-                    matriz0[i][j] = self.adj[i][j]
+                elif (self.haAresta(i, j)):
+                    matriz0[i][j] = self.arestas[(i, j)]
         distancias = [matriz0, matriz1]
 
         # fazemos o loop principal de Floyd Warshall
@@ -210,12 +207,14 @@ class Graph:
         m_res = self.V % 2
         resposta = ""
         for s in range(1, self.V + 1):
-            resposta = str(s) + ":"
+            resposta = self.rotulos[s] + ":"
             for t in range(1, self.V + 1):
+                if (distancias[m_res][s][t] < float("inf")):
+                    distancias[m_res][s][t] = int(distancias[m_res][s][t])
                 if (t == self.V):
                     resposta = resposta + str(distancias[m_res][s][t])
                 else:
-                    resposta = resposta + str(distancias[m_res][s][t]) + ", "
+                    resposta = resposta + str(distancias[m_res][s][t]) + ","
             print(resposta)
 
 
@@ -225,12 +224,27 @@ class Graph:
 # ler objeto
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
-grafo.bfs(4)
-# grafo.dijkstra(2)
-# grafo.floydWarshall()
-# grafo.hierholzer()
-# print (grafo.adj)
-# print(grafo.qtdArestas())
-# print(grafo.rotulos)
-# print(grafo.BFS(1))
-# print(grafo.qtdArestas)
+print ("quantidade de vertices = " + str(grafo.qtdVertices()))
+print ("quantidade de arestas = " + str(grafo.qtdArestas()))
+for i in range(1, grafo.qtdVertices() + 1):
+    print ("grau vertice "+ str(i) + " = " + str(grafo.grau(i)))
+    print (grafo.vizinhos(i))
+for i in range(1, grafo.qtdVertices() + 1):
+    for j in range(1, grafo.qtdVertices() + 1):
+        if (grafo.haAresta(i, j)):
+            print ("Existe aresta (" + str(i) + ", " + str(j) + ")")
+        else:
+            print ("Não existe aresta(" + str(i) + ", " + str(j) + ")")
+for i in range(1, grafo.qtdVertices()+ 1):
+    for j in range(1, grafo.qtdVertices() + 1):
+        print ("peso (" + str(i) + ", " + str(j) + ") = " + str(grafo.peso(i, j)))
+for i in range(1, grafo.qtdVertices() + 1):
+    print ("BFS começando do vértice " + str(i))
+    grafo.bfs(i)
+for i in range(1, grafo.qtdVertices() + 1):
+    print("Dijkstra começando do vértice " + str(i))
+    grafo.dijkstra(i)
+print ("Tentando obter um ciclo euleriano")
+grafo.hierholzer()
+print ("Procurando todos os caminhos com Floyd Warshall")
+grafo.floydWarshall()
