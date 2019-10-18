@@ -1,3 +1,5 @@
+import operator
+
 class Graph:
     def __init__(self, arquivo):
         file = open(arquivo, 'r')
@@ -17,6 +19,11 @@ class Graph:
             rotulo = linha[1][:-1]
             self.addVertice(numero, rotulo)
         linhaEdges = file.readline()
+        arcos = False
+        if (linhaEdges == "*arcs"):
+            arcos = True
+        if (linhaEdges == "*edges"):
+            arcos = False
         while True:
             try:
                 linha = file.readline()
@@ -24,7 +31,10 @@ class Graph:
                 a, b, peso = linha.split()
                 a, b = map(int, [a, b])
                 peso = float(peso)
-                self.addAresta(a, b, peso)
+                if (arcos):
+                    self.addArco(a, b, peso)
+                else:
+                    self.addAresta(a, b, peso)
             except EOFError:
                 break
         file.close()
@@ -38,6 +48,11 @@ class Graph:
         self.v_adj[b].append(a)
         self.arestas[(a, b)] = peso
         self.arestas[(b, a)] = peso
+        self.E += 1
+
+    def addArco(self, a, b, peso):
+        self.v_adj[a].append(b)
+        self.arestas[(a, b)] = peso
         self.E += 1
 
     def qtdVertices(self):
@@ -65,186 +80,78 @@ class Graph:
             return self.arestas[(u, v)]
         return (float("inf"))
 
-    def bfs(self, s):
-        visitados = [False] * (self.V + 1)
-        distancia = [(float("inf"))] * (self.V + 1)
+    tempo = 0
 
-        visitados[s] = True
-        distancia[s] = 0
-
-        fila = []
-        fila.append(s)
-
-        linha = "0: " + self.rotulos[s] + ","
-        nivel_atual = 0
-        while (len(fila) != 0):
-            u = fila.pop(0)
-            for v in self.vizinhos(u):
-                if (not visitados[v]):
-                    visitados[v] = True
-                    distancia[v] = distancia[u] + 1
-                    if (distancia[v] > nivel_atual):
-                        nivel_atual += 1
-                        print(linha[:-1])
-                        linha = str(nivel_atual) + ": "
-                    linha = linha + self.rotulos[v] + ","
-                    fila.append(v)
-        print(linha[:-1])
-
-    def menor(self, distancias, visitados):
-        max = float("Inf")
-        max_v = -1
-        for i in range(len(distancias)):
-            if ((not visitados[i]) and distancias[i] < max):
-                max = distancias[i]
-                max_v = i
-        return max_v
-
-    def dijkstra(self, s):
-
+    def dfs(self):
+        visitado = [False] * (self.V + 1)
+        tempo_entrada = [(float("inf"))] * (self.V + 1)
+        tempo_saida = [(float("inf"))] * (self.V + 1)
         ancestrais = [None] * (self.V + 1)
-        visitados = [False] * (self.V + 1)
-        distancias = [float ("Inf")] * (self.V + 1)
-        distancias[s] = 0
 
-        while (True):
-            v = self.menor(distancias, visitados)
-            if (v == -1):
-                break
-            visitados[v] = True
+        tempo = 0;
 
-            for u in self.vizinhos(v):
-                if (distancias[u] > distancias[v] + self.peso(v, u)):
-                    distancias[u] = distancias[v] + self.peso(v, u)
-                    ancestrais[u] = v
+        for u in range(1, self.V + 1):
+            if not visitado[u]:
+                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida)
 
-        # printa as informações
-        for i in range(1, self.V + 1):
-            if (distancias[i] < float("inf")):
-                distancias[i] = int(distancias[i])
-            linha = self.rotulos[i] + "; d=" + str(distancias[i])
-            vertice = i
+        return visitado, tempo_entrada, ancestrais, tempo_saida
 
-            while (ancestrais[vertice] != None):
-                vertice = ancestrais[vertice]
-                linha = self.rotulos[vertice] + "," + linha
-            linha = self.rotulos[i] + ": " + linha
+    def dfs_visit(self, v, visitado, tempo_entrada, ancestrais, tempo_saida):
+        visitado[v] = True
+        tempo += 1
+        tempo_entrada[v] = tempo
 
-            print(linha)
+        for u in vizinhos(v):
+            if not visitado[u]:
+                ancestrais[u] = v
+                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida)
 
-    def hierholzer(self):
-        arestas = {}
-
-        for i in range(1, self.V + 1):
-            arestas[i] = self.vizinhos(i)
-
-        n_impares = 0
-        for i in range(1, self.V + 1):
-            if (len(arestas[i]) % 2 != 0):
-                n_impares += 1
-
-        if (n_impares >= 1):
-            print (0)
-            return
-
-        caminho_atual = []
-
-        # podemos começar de um vértice arbitrário
-        caminho_atual.append(1)
-        v_atual = 1
-
-        ciclo = []
-
-        while (len(caminho_atual) != 0):
-            if (len(arestas[v_atual]) > 0):
-                caminho_atual.append(v_atual)
-
-                v_prox = arestas[v_atual].pop(0)
-
-                arestas[v_prox].remove(v_atual)
-
-                v_atual = v_prox
-            else:
-                ciclo.append(v_atual)
-
-                v_atual = caminho_atual.pop()
-
-        resultado = ""
-        for i in range(len(ciclo)-1, -1, -1):
-            if (i != 0):
-                resultado = resultado + self.rotulos[ciclo[i]] + ","
-            else:
-                resultado = resultado + self.rotulos[ciclo[i]]
-        print (resultado)
+        tempo += 1
+        tempo_saida = tempo
 
 
-    def floydWarshall(self):
-        # vamos usar apenas duas matrizes para o problema
-        matriz0 = []
-        matriz1 = []
-        for _ in range(self.V + 1):
-            matriz0.append([float("inf")] * (self.V + 1))
-            matriz1.append([float("inf")] * (self.V + 1))
+    def find(self, raizes, i):
+        if (raizes[i] == i):
+            return i
+        raizes[i] = self.find(raizes, raizes[i])
+        return raizes[i]
 
-        # inicializamos a primeira matriz tal como a função W
-        for i in range(1, self.V + 1):
-            for j in range(1, self.V + 1):
-                if (i == j):
-                    matriz0[i][j] = 0
-                elif (self.haAresta(i, j)):
-                    matriz0[i][j] = self.arestas[(i, j)]
-        distancias = [matriz0, matriz1]
+    def union(self, raizes, rank, xs, ys):
+        x = self.find(raizes, xs)
+        y = self.find(raizes, ys)
+        if (rank[x] > rank[y]):
+            raizes[y] = x
+        elif (rank[x] < rank[y]):
+            raizes[x] = y
+        else:
+            raizes[x] = y
+            rank[y] = rank[y] + 1
 
-        # fazemos o loop principal de Floyd Warshall
-        for k in range(1, self.V + 1):
-            m = k % 2
-            for u in range(1, self.V + 1):
-                for v in range(1, self.V + 1):
-                    distancias[m][u][v] = min(distancias[1-m][u][v],
-                                          distancias[1-m][u][k] + distancias[1-m][k][v])
+    def kruskal(self):
+        raizes = [i for i in range(self.V + 1)]
+        weight = 0;
+        rank = [0] * (self.V + 1)
 
-        # a matriz com as respostas é a m_res
-        m_res = self.V % 2
-        resposta = ""
-        for s in range(1, self.V + 1):
-            resposta = self.rotulos[s] + ":"
-            for t in range(1, self.V + 1):
-                if (distancias[m_res][s][t] < float("inf")):
-                    distancias[m_res][s][t] = int(distancias[m_res][s][t])
-                if (t == self.V):
-                    resposta = resposta + str(distancias[m_res][s][t])
-                else:
-                    resposta = resposta + str(distancias[m_res][s][t]) + ","
-            print(resposta)
+        arv_min = []
+        arestas_ord = sorted(self.arestas.items(), key=operator.itemgetter(1))
+        print(arestas_ord)
 
+        for i in range(len(arestas_ord)):
+            a, b = arestas_ord[i][0]
+            if (self.find(raizes, a) == self.find(raizes, b)):
+                # print ("Ciclo detec: " + str(a) + " " + str(b))
+                continue
+            arv_min.append((a,b));
+            weight += arestas_ord[i][1]
+            self.union(raizes, rank, a, b)
 
-
+        return arv_min, weight
 
 
 # ler objeto
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
-print ("quantidade de vertices = " + str(grafo.qtdVertices()))
-print ("quantidade de arestas = " + str(grafo.qtdArestas()))
-for i in range(1, grafo.qtdVertices() + 1):
-    print ("grau vertice "+ str(i) + " = " + str(grafo.grau(i)))
-    print (grafo.vizinhos(i))
-for i in range(1, grafo.qtdVertices() + 1):
-    for j in range(1, grafo.qtdVertices() + 1):
-        if (grafo.haAresta(i, j)):
-            print ("Existe aresta (" + str(i) + ", " + str(j) + ")")
-        else:
-            print ("Não existe aresta(" + str(i) + ", " + str(j) + ")")
-for i in range(1, grafo.qtdVertices()+ 1):
-    for j in range(1, grafo.qtdVertices() + 1):
-        print ("peso (" + str(i) + ", " + str(j) + ") = " + str(grafo.peso(i, j)))
-for i in range(1, grafo.qtdVertices() + 1):
-    print ("BFS começando do vértice " + str(i))
-    grafo.bfs(i)
-for i in range(1, grafo.qtdVertices() + 1):
-    print("Dijkstra começando do vértice " + str(i))
-    grafo.dijkstra(i)
-print ("Tentando obter um ciclo euleriano")
-grafo.hierholzer()
-print ("Procurando todos os caminhos com Floyd Warshall")
-grafo.floydWarshall()
+
+arv, w = grafo.kruskal()
+print ("Arvore: " + str(arv))
+print ("Peso: " + str(w))

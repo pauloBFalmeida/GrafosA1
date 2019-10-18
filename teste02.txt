@@ -1,14 +1,8 @@
-*vertices 5
-1 "1"
-2 "2"
-3 "3"
-4 "4"
-5 "5"
-*edges
-1 2 100000
-2 3 4
-1 3 40
-2 5 90
-3 5 4
-3 4 2
-4 1 1
+
+
+            /* Earliest Deadline */
+	        p->deadline = ticks + (priority_ratios[p->nice] * PROC_QUANTUM);
+			if ((p->deadline < next->deadline))
+			{
+				next = p;
+			}
