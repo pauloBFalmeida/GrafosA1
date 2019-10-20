@@ -20,9 +20,9 @@ class Graph:
             self.addVertice(numero, rotulo)
         linhaEdges = file.readline()
         arcos = False
-        if (linhaEdges == "*arcs"):
+        if (linhaEdges == "*arcs\n"):
             arcos = True
-        if (linhaEdges == "*edges"):
+        if (linhaEdges == "*edges\n"):
             arcos = False
         while True:
             try:
@@ -80,7 +80,6 @@ class Graph:
             return self.arestas[(u, v)]
         return (float("inf"))
 
-    tempo = 0
 
     def dfs(self):
         visitado = [False] * (self.V + 1)
@@ -88,26 +87,71 @@ class Graph:
         tempo_saida = [(float("inf"))] * (self.V + 1)
         ancestrais = [None] * (self.V + 1)
 
-        tempo = 0;
+        tempo = [0];
 
         for u in range(1, self.V + 1):
             if not visitado[u]:
-                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida)
+                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida, tempo)
 
         return visitado, tempo_entrada, ancestrais, tempo_saida
 
-    def dfs_visit(self, v, visitado, tempo_entrada, ancestrais, tempo_saida):
+    def dfs_visit(self, v, visitado, tempo_entrada, ancestrais, tempo_saida, tempo):
         visitado[v] = True
-        tempo += 1
-        tempo_entrada[v] = tempo
+        tempo[0] += 1
+        tempo_entrada[v] = tempo[0]
 
-        for u in vizinhos(v):
+        for u in self.vizinhos(v):
             if not visitado[u]:
                 ancestrais[u] = v
-                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida)
+                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida, tempo)
 
-        tempo += 1
-        tempo_saida = tempo
+        tempo[0] += 1
+        tempo_saida[v] = tempo[0]
+
+    def ord_topologica(self):
+        visitado = [False] * (self.V + 1)
+        tempo_entrada = [(float("inf"))] * (self.V + 1)
+        tempo_saida = [(float("inf"))] * (self.V + 1)
+        ancestrais = [None] * (self.V + 1)
+
+        tempo = [0]
+        pilha = []
+
+        ciclico = [False]
+
+        for i in range(1, self.V + 1):
+            if not visitado[i]:
+                self.ord_topologica_aux(i, visitado, tempo_entrada, tempo_saida, pilha, tempo, ciclico)
+
+        if (ciclico[0]):
+            print("Impossivel fazer a ordenação topológica");
+            return
+        resultado = ""
+        for i in range(len(pilha)-1, -1, -1):
+            resultado = resultado + self.rotulo(pilha[i])
+            if (i != 0):
+                resultado = resultado + " -> "
+
+        print (resultado)
+
+    def ord_topologica_aux(self, i, visitado, tempo_entrada, tempo_saida, pilha, tempo, ciclico):
+        visitado[i] = True
+        tempo[0] += 1
+        tempo_entrada[i] = tempo[0]
+
+        for u in self.vizinhos(i):
+            if (tempo_entrada[u] < float("inf") and tempo_saida[u] == float("inf")):
+                ciclico[0] = True
+                return
+            if not visitado[u]:
+                self.ord_topologica_aux(u, visitado, tempo_entrada, tempo_saida, pilha, tempo, ciclico)
+        if (ciclico[0]):
+            return
+        tempo[0] += 1
+        tempo_saida[i] = tempo[0]
+
+        pilha.insert(0, i)
+
 
 
     def find(self, raizes, i):
@@ -152,6 +196,9 @@ class Graph:
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 
-arv, w = grafo.kruskal()
-print ("Arvore: " + str(arv))
-print ("Peso: " + str(w))
+# print("Arestas:")
+# print(grafo.arestas)
+grafo.ord_topologica()
+# arv, w = grafo.kruskal()
+# print ("Arvore: " + str(arv))
+# print ("Peso: " + str(w))
