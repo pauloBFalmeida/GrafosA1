@@ -108,6 +108,58 @@ class Graph:
         tempo[0] += 1
         tempo_saida[v] = tempo[0]
 
+
+    def cfc(self):
+
+        visitado, tempo_entrada, ancestrais_linha, tempo_saida = self.DFS()
+
+        arestas_t = []
+
+        for i in self.arestas.keys():
+            x, y = i
+            arestas_t.append((y, x))
+
+        visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida = self.dfs_adapt(tempo_saida, arestas_t)
+
+        return ancestrais_t
+
+
+    def dfs_adapt(self, tempo_saida, arestas_t):
+        visitado_t = [False] * (self.V + 1)
+        tempo_entrada_t = [(float("inf"))] * (self.V + 1)
+        tempo_saida_t = [(float("inf"))] * (self.V + 1)
+        ancestrais_t = [None] * (self.V + 1)
+
+        vertices_f = []
+
+        for i in range(1, self.V + 1):
+            vertices_f.append((tempo_saida[i], i))
+
+        vertices_f.sort(reverse=True)
+
+        tempo = [0]
+
+        for i in range(len(vertices_f)):
+            if not visitado_t[vertices_f[i][1]]:
+                dfs_adapt_visit(vertices_f[i][1], visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo)
+
+        return visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida_t
+
+    def dfs_adapt_visit(self, v, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo):
+        visitado_t[v] = True
+        tempo[0] += 1
+        tempo_entrada_t[v] = tempo[0]
+
+        for x in range(len(arestas_t)):
+            if arestas_t[x][0] == v:
+                if not visitado_t[arestas_t[x][1]]:
+                    ancestrais_t[arestas_t[x][1]] = v
+                    self.dfs_adapt_visit(arestas_t[x][1], visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida_t, tempo)
+
+        tempo[0] += 1
+        tempo_saida_t[v] = tempo[0]
+
+
     def ord_topologica(self):
         visitado = [False] * (self.V + 1)
         tempo_entrada = [(float("inf"))] * (self.V + 1)
@@ -178,7 +230,6 @@ class Graph:
 
         arv_min = []
         arestas_ord = sorted(self.arestas.items(), key=operator.itemgetter(1))
-        print(arestas_ord)
 
         for i in range(len(arestas_ord)):
             a, b = arestas_ord[i][0]
@@ -188,8 +239,14 @@ class Graph:
             arv_min.append((a,b));
             weight += arestas_ord[i][1]
             self.union(raizes, rank, a, b)
-
-        return arv_min, weight
+        # return arv_min, weight
+        print(weight)
+        saida = ""
+        for i in range(len(arv_min)):
+            saida = saida + str(arv_min[i][0]) + '-' + str(arv_min[i][1])
+            if i != len(arv_min) - 1:
+                saida += ", "
+        print(saida)
 
 
 # ler objeto
@@ -198,7 +255,7 @@ grafo = Graph(nome_do_arquivo)
 
 # print("Arestas:")
 # print(grafo.arestas)
-grafo.ord_topologica()
-# arv, w = grafo.kruskal()
+# grafo.ord_topologic
+grafo.kruskal()
 # print ("Arvore: " + str(arv))
 # print ("Peso: " + str(w))
