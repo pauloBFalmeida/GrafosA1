@@ -111,7 +111,7 @@ class Graph:
 
     def cfc(self):
 
-        visitado, tempo_entrada, ancestrais_linha, tempo_saida = self.DFS()
+        visitado, tempo_entrada, ancestrais_linha, tempo_saida = self.dfs()
 
         arestas_t = []
 
@@ -119,9 +119,9 @@ class Graph:
             x, y = i
             arestas_t.append((y, x))
 
-        visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida = self.dfs_adapt(tempo_saida, arestas_t)
+        self.dfs_adapt(tempo_saida, arestas_t)
 
-        return ancestrais_t
+        # return ancestrais_t
 
 
     def dfs_adapt(self, tempo_saida, arestas_t):
@@ -139,14 +139,25 @@ class Graph:
 
         tempo = [0]
 
+        componente = []
+
         for i in range(len(vertices_f)):
             if not visitado_t[vertices_f[i][1]]:
-                dfs_adapt_visit(vertices_f[i][1], visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo)
+                componente = []
+                self.dfs_adapt_visit(vertices_f[i][1], componente, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo)
+                resultado = ""
+                for i in range(len(componente)):
+                    resultado = resultado + str(componente[i])
+                    if not i == len(componente) - 1:
+                        resultado = resultado + ","
+                print (resultado)
 
-        return visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida_t
 
-    def dfs_adapt_visit(self, v, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo):
+        # return visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida_t
+
+    def dfs_adapt_visit(self, v, componente, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo):
         visitado_t[v] = True
+        componente.append(v)
         tempo[0] += 1
         tempo_entrada_t[v] = tempo[0]
 
@@ -154,7 +165,7 @@ class Graph:
             if arestas_t[x][0] == v:
                 if not visitado_t[arestas_t[x][1]]:
                     ancestrais_t[arestas_t[x][1]] = v
-                    self.dfs_adapt_visit(arestas_t[x][1], visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida_t, tempo)
+                    self.dfs_adapt_visit(arestas_t[x][1], componente, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo)
 
         tempo[0] += 1
         tempo_saida_t[v] = tempo[0]
@@ -256,6 +267,6 @@ grafo = Graph(nome_do_arquivo)
 # print("Arestas:")
 # print(grafo.arestas)
 # grafo.ord_topologic
-grafo.kruskal()
+grafo.cfc()
 # print ("Arvore: " + str(arv))
 # print ("Peso: " + str(w))
