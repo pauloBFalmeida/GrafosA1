@@ -81,6 +81,7 @@ class Graph:
         return (float("inf"))
 
 
+    # Uma busca em profundidade padrão
     def dfs(self):
         visitado = [False] * (self.V + 1)
         tempo_entrada = [(float("inf"))] * (self.V + 1)
@@ -109,19 +110,20 @@ class Graph:
         tempo_saida[v] = tempo[0]
 
 
+    # Componentes fortemente conexas
     def cfc(self):
 
+        # Rodamos uma busca em profundidade para obtermos os tempos de saída
         visitado, tempo_entrada, ancestrais_linha, tempo_saida = self.dfs()
 
+        # Para transpormos o grafo, criamos uma lista para as arestas transpostas
+        # e usamos isso como as arestas na busca adaptada
         arestas_t = []
-
         for i in self.arestas.keys():
             x, y = i
             arestas_t.append((y, x))
 
         self.dfs_adapt(tempo_saida, arestas_t)
-
-        # return ancestrais_t
 
 
     def dfs_adapt(self, tempo_saida, arestas_t):
@@ -135,10 +137,12 @@ class Graph:
         for i in range(1, self.V + 1):
             vertices_f.append((tempo_saida[i], i))
 
+        # Obtemos os vértices ordenados por tempo de saída
         vertices_f.sort(reverse=True)
 
         tempo = [0]
 
+        # Imprimimos os componentes separadamente
         componente = []
 
         for i in range(len(vertices_f)):
@@ -151,9 +155,6 @@ class Graph:
                     if not i == len(componente) - 1:
                         resultado = resultado + ","
                 print (resultado)
-
-
-        # return visitado_t, tempo_entrada_t, ancestrais_t, tempo_saida_t
 
     def dfs_adapt_visit(self, v, componente, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo):
         visitado_t[v] = True
@@ -178,45 +179,48 @@ class Graph:
         ancestrais = [None] * (self.V + 1)
 
         tempo = [0]
-        pilha = []
+        lista = []
 
         ciclico = [False]
 
+        # Fazemos uma busca em profundidade
         for i in range(1, self.V + 1):
             if not visitado[i]:
-                self.ord_topologica_aux(i, visitado, tempo_entrada, tempo_saida, pilha, tempo, ciclico)
+                self.ord_topologica_aux(i, visitado, tempo_entrada, tempo_saida, lista, tempo, ciclico)
 
         if (ciclico[0]):
             print("Impossivel fazer a ordenação topológica");
             return
         resultado = ""
-        for i in range(len(pilha)-1, -1, -1):
-            resultado = resultado + self.rotulo(pilha[i])
-            if (i != 0):
+        for i in range(len(lista)):
+            resultado = resultado + self.rotulo(lista[i])
+            if (i != len(lista)-1):
                 resultado = resultado + " -> "
 
         print (resultado)
 
-    def ord_topologica_aux(self, i, visitado, tempo_entrada, tempo_saida, pilha, tempo, ciclico):
+    def ord_topologica_aux(self, i, visitado, tempo_entrada, tempo_saida, lista, tempo, ciclico):
         visitado[i] = True
         tempo[0] += 1
         tempo_entrada[i] = tempo[0]
 
         for u in self.vizinhos(i):
+            # Se há um arco de retorno, há um ciclo no grafo e a ordenação é impossível
             if (tempo_entrada[u] < float("inf") and tempo_saida[u] == float("inf")):
                 ciclico[0] = True
                 return
             if not visitado[u]:
-                self.ord_topologica_aux(u, visitado, tempo_entrada, tempo_saida, pilha, tempo, ciclico)
+                self.ord_topologica_aux(u, visitado, tempo_entrada, tempo_saida, lista, tempo, ciclico)
         if (ciclico[0]):
             return
         tempo[0] += 1
         tempo_saida[i] = tempo[0]
 
-        pilha.insert(0, i)
+        # Adicionamos no início da lista quando terminamos um vértice
+        lista.insert(0, i)
 
 
-
+    # Usamos conjuntos disjuntos para detectar ciclos
     def find(self, raizes, i):
         if (raizes[i] == i):
             return i
@@ -240,17 +244,21 @@ class Graph:
         rank = [0] * (self.V + 1)
 
         arv_min = []
+        # Ordenamos as arestas baseado no peso
         arestas_ord = sorted(self.arestas.items(), key=operator.itemgetter(1))
 
+        # Percorremos as arestas ordenadas
         for i in range(len(arestas_ord)):
             a, b = arestas_ord[i][0]
+            # Se essa aresta formar um ciclo, simplesmente não adicionamos a aresta
             if (self.find(raizes, a) == self.find(raizes, b)):
-                # print ("Ciclo detec: " + str(a) + " " + str(b))
                 continue
+
+            # Adicionamos na árvore mínima
             arv_min.append((a,b));
             weight += arestas_ord[i][1]
             self.union(raizes, rank, a, b)
-        # return arv_min, weight
+
         print(weight)
         saida = ""
         for i in range(len(arv_min)):
@@ -264,9 +272,11 @@ class Graph:
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 
-# print("Arestas:")
-# print(grafo.arestas)
-# grafo.ord_topologic
-grafo.cfc()
-# print ("Arvore: " + str(arv))
-# print ("Peso: " + str(w))
+# Componentes fortemente conexas
+# grafo.cfc()
+
+# Ordenação topológica
+# grafo.ord_topologica()
+
+# Árvore geradora mínima (Kruskal)
+# grafo.kruskal()
