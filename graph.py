@@ -80,203 +80,91 @@ class Graph:
             return self.arestas[(u, v)]
         return (float("inf"))
 
+    def bipartir(self, s):
+        # conjuntos 0 e 1
 
-    # Uma busca em profundidade padrão
-    def dfs(self):
-        visitado = [False] * (self.V + 1)
-        tempo_entrada = [(float("inf"))] * (self.V + 1)
-        tempo_saida = [(float("inf"))] * (self.V + 1)
-        ancestrais = [None] * (self.V + 1)
+        conjuntos = [-1] * (self.V + 1)
 
-        tempo = [0];
+        fila = []
+        fila.append(s)
+        conjuntos[s] = 0
 
-        for u in range(1, self.V + 1):
-            if not visitado[u]:
-                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida, tempo)
+        while len(fila) != 0:
+            v = fila.pop(0)
 
-        return visitado, tempo_entrada, ancestrais, tempo_saida
-
-    def dfs_visit(self, v, visitado, tempo_entrada, ancestrais, tempo_saida, tempo):
-        visitado[v] = True
-        tempo[0] += 1
-        tempo_entrada[v] = tempo[0]
-
-        for u in self.vizinhos(v):
-            if not visitado[u]:
-                ancestrais[u] = v
-                self.dfs_visit(u, visitado, tempo_entrada, ancestrais, tempo_saida, tempo)
-
-        tempo[0] += 1
-        tempo_saida[v] = tempo[0]
+            for u in self.v_adj[v]:
+                if conjuntos[u] == -1:
+                    conjuntos[u] = 1 - conjuntos[v]
+                    fila.append(u)
+                elif conjuntos[u] == conjuntos[v]:
+                    print ("Grafo não bipartido!")
+                    return
+        X = [i for i in range(1, self.V + 1) if conjuntos[i] == 0 or conjuntos[i] == -1]
+        Y = [i for i in range(1, self.V + 1) if conjuntos[i] == 1]
+        return X, Y
 
 
-    # Componentes fortemente conexas
-    def cfc(self):
 
-        # Rodamos uma busca em profundidade para obtermos os tempos de saída
-        visitado, tempo_entrada, ancestrais_linha, tempo_saida = self.dfs()
+    def hopcroft_karp(self):
+        dist = [float("inf")] * (self.V + 1)
+        mate = [None] * (self.V + 1)
 
-        # Para transpormos o grafo, criamos uma lista para as arestas transpostas
-        # e usamos isso como as arestas na busca adaptada
-        arestas_t = []
-        for i in self.arestas.keys():
-            x, y = i
-            arestas_t.append((y, x))
+        m = 0
+        X, Y = self.bipartir(1)
+        while self.bfs_hk(X, mate, dist):
+            #dividir o grafo em X
+            for x in X:
+                if mate[x] == None:
+                    if self.dfs_hk(X, mate, x, dist):
+                        m += 1
 
-        self.dfs_adapt(tempo_saida, arestas_t)
+        # return m, mate
+        print ("Emparelhamento máximo: " + str(m))
 
+        str_arestas = ""
+        for i in range(self.V + 1):
+            if mate[i] != None and mate[i] > i:
+                str_arestas += ("(" + str(i) + "," + str(mate[i]) + "),")
+        print (str_arestas[:-1])
 
-    def dfs_adapt(self, tempo_saida, arestas_t):
-        visitado_t = [False] * (self.V + 1)
-        tempo_entrada_t = [(float("inf"))] * (self.V + 1)
-        tempo_saida_t = [(float("inf"))] * (self.V + 1)
-        ancestrais_t = [None] * (self.V + 1)
+    def bfs_hk(self, X, mate, dist):
+        fila = []
 
-        vertices_f = []
+        for x in X:
+            if mate[x] == None:
+                dist[x] = 0
+                fila.append(x)
+            else:
+                dist[x] = float("inf")
+        dist[0] = float("inf")
 
-        for i in range(1, self.V + 1):
-            vertices_f.append((tempo_saida[i], i))
+        while len(fila) != 0:
+            x = fila.pop(0)
 
-        # Obtemos os vértices ordenados por tempo de saída
-        vertices_f.sort(reverse=True)
+            if (dist[x] < dist[0]):
+                for y in self.v_adj[x]:
+                    if mate[y] == None:
+                        dist[0] = dist[x] + 1
 
-        tempo = [0]
+                    elif dist[mate[y]] == float("inf"):
+                        dist[mate[y]] = dist[x] + 1
+                        fila.append(mate[y])
+        return dist[0] != float("inf")
 
-        # Imprimimos os componentes separadamente
-        componente = []
-
-        for i in range(len(vertices_f)):
-            if not visitado_t[vertices_f[i][1]]:
-                componente = []
-                self.dfs_adapt_visit(vertices_f[i][1], componente, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo)
-                resultado = ""
-                for i in range(len(componente)):
-                    resultado = resultado + str(componente[i])
-                    if not i == len(componente) - 1:
-                        resultado = resultado + ","
-                print (resultado)
-
-    def dfs_adapt_visit(self, v, componente, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo):
-        visitado_t[v] = True
-        componente.append(v)
-        tempo[0] += 1
-        tempo_entrada_t[v] = tempo[0]
-
-        for x in range(len(arestas_t)):
-            if arestas_t[x][0] == v:
-                if not visitado_t[arestas_t[x][1]]:
-                    ancestrais_t[arestas_t[x][1]] = v
-                    self.dfs_adapt_visit(arestas_t[x][1], componente, visitado_t, tempo_entrada_t, tempo_saida_t, ancestrais_t, arestas_t, tempo)
-
-        tempo[0] += 1
-        tempo_saida_t[v] = tempo[0]
-
-
-    def ord_topologica(self):
-        visitado = [False] * (self.V + 1)
-        tempo_entrada = [(float("inf"))] * (self.V + 1)
-        tempo_saida = [(float("inf"))] * (self.V + 1)
-        ancestrais = [None] * (self.V + 1)
-
-        tempo = [0]
-        lista = []
-
-        ciclico = [False]
-
-        # Fazemos uma busca em profundidade
-        for i in range(1, self.V + 1):
-            if not visitado[i]:
-                self.ord_topologica_aux(i, visitado, tempo_entrada, tempo_saida, lista, tempo, ciclico)
-
-        if (ciclico[0]):
-            print("Impossivel fazer a ordenação topológica");
-            return
-        resultado = ""
-        for i in range(len(lista)):
-            resultado = resultado + self.rotulo(lista[i])
-            if (i != len(lista)-1):
-                resultado = resultado + " -> "
-
-        print (resultado)
-
-    def ord_topologica_aux(self, i, visitado, tempo_entrada, tempo_saida, lista, tempo, ciclico):
-        visitado[i] = True
-        tempo[0] += 1
-        tempo_entrada[i] = tempo[0]
-
-        for u in self.vizinhos(i):
-            # Se há um arco de retorno, há um ciclo no grafo e a ordenação é impossível
-            if (tempo_entrada[u] < float("inf") and tempo_saida[u] == float("inf")):
-                ciclico[0] = True
-                return
-            if not visitado[u]:
-                self.ord_topologica_aux(u, visitado, tempo_entrada, tempo_saida, lista, tempo, ciclico)
-        if (ciclico[0]):
-            return
-        tempo[0] += 1
-        tempo_saida[i] = tempo[0]
-
-        # Adicionamos no início da lista quando terminamos um vértice
-        lista.insert(0, i)
-
-
-    # Usamos conjuntos disjuntos para detectar ciclos
-    def find(self, raizes, i):
-        if (raizes[i] == i):
-            return i
-        raizes[i] = self.find(raizes, raizes[i])
-        return raizes[i]
-
-    def union(self, raizes, rank, xs, ys):
-        x = self.find(raizes, xs)
-        y = self.find(raizes, ys)
-        if (rank[x] > rank[y]):
-            raizes[y] = x
-        elif (rank[x] < rank[y]):
-            raizes[x] = y
-        else:
-            raizes[x] = y
-            rank[y] = rank[y] + 1
-
-    def kruskal(self):
-        raizes = [i for i in range(self.V + 1)]
-        weight = 0;
-        rank = [0] * (self.V + 1)
-
-        arv_min = []
-        # Ordenamos as arestas baseado no peso
-        arestas_ord = sorted(self.arestas.items(), key=operator.itemgetter(1))
-
-        # Percorremos as arestas ordenadas
-        for i in range(len(arestas_ord)):
-            a, b = arestas_ord[i][0]
-            # Se essa aresta formar um ciclo, simplesmente não adicionamos a aresta
-            if (self.find(raizes, a) == self.find(raizes, b)):
-                continue
-
-            # Adicionamos na árvore mínima
-            arv_min.append((a,b));
-            weight += arestas_ord[i][1]
-            self.union(raizes, rank, a, b)
-
-        print(weight)
-        saida = ""
-        for i in range(len(arv_min)):
-            saida = saida + str(arv_min[i][0]) + '-' + str(arv_min[i][1])
-            if i != len(arv_min) - 1:
-                saida += ", "
-        print(saida)
-
+    def dfs_hk(self, X, mate, x, dist):
+        if x != None:
+            for y in self.v_adj[x]:
+                if (mate[y] == None and dist[0] == dist[x] + 1) or dist[mate[y]] == dist[x] + 1:
+                    if (self.dfs_hk(X, mate, mate[y], dist)):
+                        mate[y] = x
+                        mate[x] = y
+                        return True
+            dist[x] = float("inf")
+            return False
+        return True
 
 # ler objeto
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 
-# Componentes fortemente conexas
-# grafo.cfc()
-
-# Ordenação topológica
-# grafo.ord_topologica()
-
-# Árvore geradora mínima (Kruskal)
-# grafo.kruskal()
+grafo.hopcroft_karp()
