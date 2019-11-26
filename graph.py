@@ -163,8 +163,88 @@ class Graph:
             return False
         return True
 
+
+    def edmonds_karp(self, s, t):
+        rede_residual = {}
+        rr_adj = {}
+        for (u, v) in self.arestas.keys():
+            rede_residual[(u, v)] = self.arestas[(u, v)]
+            rede_residual[(v, u)] = 0
+        # print (self.bfs_ek(2, 5, rede_residual))
+        # print(rede_residual)
+        p = self.bfs_ek(s, t, rede_residual)
+        while (p != None):
+            print(p)
+            u = p[0]
+            v = -1
+            fluxo_total = float("inf")
+            for i in range(1, len(p)):
+                v = p[i]
+                fluxo_total = min(fluxo_total, rede_residual[(u, v)])
+                u = v
+
+            print(fluxo_total)
+            u = p[0]
+            v = -1
+            for i in range(1, len(p)):
+
+                v = p[i]
+
+                # print((u, v))
+                # if (u, v) in self.arestas.keys():
+                rede_residual[(u, v)] = rede_residual[(u, v)] - fluxo_total
+                rede_residual[(v, u)] = rede_residual[(v, u)] + fluxo_total
+                # else:
+                    # rede_residual[(u, v)] = rede_residual[(u, v)] - fluxo_total
+                    # rede_residual[(v, u)] = rede_residual[(v, u)] + fluxo_total
+                u = v
+            # p = None
+            p = self.bfs_ek(s, t, rede_residual)
+            # print (rede_residual)
+        print(rede_residual)
+        fluxo_total = 0
+        for i in range(1, self.V + 1):
+            if (t, i) in rede_residual.keys() and not (t, i) in self.arestas.keys():
+                fluxo_total = fluxo_total + rede_residual[(t, i)]
+        print(fluxo_total)
+
+
+
+
+
+
+
+    def bfs_ek(self, s, t, rede_residual):
+        visitados = [False] * (self.V + 1)
+        ancestrais = [None] * (self.V + 1)
+
+        visitados[s] = True
+        fila = []
+
+        fila.append(s)
+
+        while len(fila) != 0:
+            u = fila.pop(0)
+            for v in range(1, self.V + 1):
+                if (u, v) in rede_residual.keys() and rede_residual[(u, v)] > 0 and not visitados[v]:
+                    visitados[v] = True
+                    ancestrais[v] = u
+                    if v == t:
+                        p = [t]
+                        w = t
+                        while w != s:
+                            w = ancestrais[w]
+                            p.insert(0, w)
+                        return p
+                    fila.append(v)
+        return None
+
+
 # ler objeto
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 
-grafo.hopcroft_karp()
+# grafo.hopcroft_karp()
+s = int(input())
+t = int(input())
+grafo.edmonds_karp(s, t)
