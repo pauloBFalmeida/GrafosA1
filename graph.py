@@ -208,12 +208,6 @@ class Graph:
                 fluxo_total = fluxo_total + rede_residual[(t, i)]
         print(fluxo_total)
 
-
-
-
-
-
-
     def bfs_ek(self, s, t, rede_residual):
         visitados = [False] * (self.V + 1)
         ancestrais = [None] * (self.V + 1)
@@ -239,12 +233,53 @@ class Graph:
                     fila.append(v)
         return None
 
+    def all_subsets(self, n):
+        if (n == 0):
+            return [[]]
+        conj = self.all_subsets(n-1)
+
+        saida = []
+        for i in range(len(conj)):
+            saida.append(conj[i] + [n])
+            saida.append(conj[i])
+        return saida
+
+    def ord_function(self, set):
+        ind = 0
+        for i in range(1, self.V+1):
+            if i in set:
+                ind += 2**(i-1)
+        return ind
+
+
+    def lawler(self):
+        x = [0] * (2**(self.V))
+        SS = sorted(self.all_subsets(self.V), key = len)
+        # print(S)
+        for S in SS:
+            s = self.ord_function(S)
+            x[s] = float("inf")
+            #criar novo Grafo
+            g_vert = S.copy()
+            g_arest = []
+            for u in S:
+                for v in S:
+                    if u != v and (u, v) in self.arestas.keys():
+                        g_arest.append((u, v))
+
 
 # ler objeto
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 
 # grafo.hopcroft_karp()
-s = int(input())
-t = int(input())
-grafo.edmonds_karp(s, t)
+# s = int(input())
+# t = int(input())
+# grafo.edmonds_karp(s, t)
+
+# print(grafo.all_subsets(t))
+# grafo.lawler()
+grafo.ord_function([])
+while (True):
+    l = list(map(int, input().split()))
+    print(grafo.ord_function(l))
