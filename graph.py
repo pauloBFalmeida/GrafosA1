@@ -233,16 +233,57 @@ class Graph:
                     fila.append(v)
         return None
 
-    def all_subsets(self, n):
-        if (n == 0):
+
+
+    # def all_subsets(self, n):
+    #     if (n == 0):
+    #         return [[]]
+    #     conj = self.all_subsets(n-1)
+    #
+    #     saida = []
+    #     for i in range(len(conj)):
+    #         saida.append(conj[i] + [n])
+    #         saida.append(conj[i])
+    #     return saida
+
+    def all_subsets(self, lst):
+        if lst == []:
             return [[]]
-        conj = self.all_subsets(n-1)
+        conj = self.all_subsets(lst[:-1])
 
         saida = []
         for i in range(len(conj)):
-            saida.append(conj[i] + [n])
+            saida.append(conj[i] + [lst[-1]])
             saida.append(conj[i])
         return saida
+
+    def is_independent_set(self, v_set):
+
+        for i in range(len(v_set)):
+            for j in range(len(v_set)):
+                if j != i:
+                    if (v_set[i], v_set[j]) in self.arestas.keys():
+                        return False
+        return True
+
+    def all_max_indepedent_sets(self, vert):
+        vert_sets = sorted(self.all_subsets(vert), key = len, reverse=True)
+        # print(vert_sets)
+
+        max = -1
+
+        ind_sets = []
+
+        for i in range(len(vert_sets)):
+            if (len(vert_sets[i]) < max):
+                break
+            if self.is_independent_set(vert_sets[i]):
+                # print("independent:")
+                # print(vert_sets[i])
+                max = len(vert_sets[i])
+                ind_sets.append(vert_sets[i])
+
+        return ind_sets
 
     def ord_function(self, set):
         ind = 0
@@ -251,21 +292,42 @@ class Graph:
                 ind += 2**(i-1)
         return ind
 
+    def set_delete(self, S, I):
+        new_set = []
+        for i in S:
+            if not i in I:
+                new_set.append(i)
+        return new_set
 
     def lawler(self):
         x = [0] * (2**(self.V))
-        SS = sorted(self.all_subsets(self.V), key = len)
+        cor_set = [[]] * (2**self.V)
+        SS = sorted(self.all_subsets([i for i in range(1, self.V + 1)]), key = len)
         # print(S)
         for S in SS:
+            if S == []:
+                continue
             s = self.ord_function(S)
             x[s] = float("inf")
-            #criar novo Grafo
             g_vert = S.copy()
-            g_arest = []
-            for u in S:
-                for v in S:
-                    if u != v and (u, v) in self.arestas.keys():
-                        g_arest.append((u, v))
+            ind_sets = self.all_max_indepedent_sets(g_vert)
+            for I in ind_sets:
+                i = self.ord_function(self.set_delete(S, I))
+                if x[i] + 1 < x[s]:
+                    x[s] = x[i] + 1
+                    cor_set[s] = I
+        print (x[2**(self.V) - 1])
+        S = SS[-1]
+        while S != []:
+            print(cor_set[self.ord_function(S)])
+            S = self.set_delete(S, cor_set[self.ord_function(S)])
+
+
+            # g_arest = []
+            # for u in S:
+            #     for v in S:
+            #         if u != v and (u, v) in self.arestas.keys():
+            #             g_arest.append((u, v))
 
 
 # ler objeto
@@ -276,10 +338,15 @@ grafo = Graph(nome_do_arquivo)
 # s = int(input())
 # t = int(input())
 # grafo.edmonds_karp(s, t)
+print(grafo.lawler())
 
 # print(grafo.all_subsets(t))
 # grafo.lawler()
-grafo.ord_function([])
-while (True):
-    l = list(map(int, input().split()))
-    print(grafo.ord_function(l))
+# grafo.ord_function([])
+# while (True):
+    # m = list(map(int, input().split()))
+    # l = list(map(int, input().split()))
+    # print(grafo.set_delete(l, m))
+    # print(grafo.is_independent_set(l))
+    # print(sorted(grafo.all_subsets(l), key = len))
+    # print(grafo.all_max_indepedent_sets(l))
