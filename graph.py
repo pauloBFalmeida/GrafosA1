@@ -361,6 +361,7 @@ class Graph:
         S = SS[-1]
         cor = 1
         cores = [0] * (self.V + 1)
+        # vamos tomando os conjuntos independentes para termos as cores de cada vértice
         while S != []:
             for i in self.inv_function(cor_set[self.ord_function(S)]):
                 cores[i] = cor
