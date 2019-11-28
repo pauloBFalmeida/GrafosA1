@@ -4,39 +4,92 @@ class Graph:
     def __init__(self, arquivo):
         file = open(arquivo, 'r')
         linhaInicial = file.readline().split()
-        nVertices = int(linhaInicial[1])
-        self.V = nVertices
-        self.E = 0
-        self.v_adj = {}
-        for i in range(1, self.V + 1):
-            self.v_adj[i] = []
-        self.arestas = {}
-        self.rotulos = {}
+        if linhaInicial[0] == "vertices":
+            nVertices = int(linhaInicial[1])
+            self.V = nVertices
+            self.E = 0
+            self.v_adj = {}
+            for i in range(1, self.V + 1):
+                self.v_adj[i] = []
+            self.arestas = {}
+            self.rotulos = {}
+            self.flow_source = 1
+            self.flow_sink = self.V
 
-        for i in range(nVertices):
-            linha = file.readline().split(' ', 1)
-            numero = int(linha[0])
-            rotulo = linha[1][:-1]
-            self.addVertice(numero, rotulo)
-        linhaEdges = file.readline()
-        arcos = False
-        if (linhaEdges == "*arcs\n"):
-            arcos = True
-        if (linhaEdges == "*edges\n"):
+            for i in range(nVertices):
+                linha = file.readline().split(' ', 1)
+                numero = int(linha[0])
+                rotulo = linha[1][:-1]
+                self.addVertice(numero, rotulo)
+            linhaEdges = file.readline()
             arcos = False
-        while True:
-            try:
-                linha = file.readline()
-                if (linha == ""): break
-                a, b, peso = linha.split()
-                a, b = map(int, [a, b])
-                peso = float(peso)
-                if (arcos):
-                    self.addArco(a, b, peso)
-                else:
-                    self.addAresta(a, b, peso)
-            except EOFError:
-                break
+            if (linhaEdges == "*arcs\n"):
+                arcos = True
+            if (linhaEdges == "*edges\n"):
+                arcos = False
+            while True:
+                try:
+                    linha = file.readline()
+                    if (linha == ""): break
+                    a, b, peso = linha.split()
+                    a, b = map(int, [a, b])
+                    peso = float(peso)
+                    if (arcos):
+                        self.addArco(a, b, peso)
+                    else:
+                        self.addAresta(a, b, peso)
+                except EOFError:
+                    break
+        else:
+            nLinhas = 0
+            nLinhasDet = False
+            while (True):
+                try:
+                    linha = file.readline().split()
+                    # print("leu: " + linha)
+                    if (nLinhas == 0 and nLinhasDet):
+                        break
+                    if linha == []:
+                        continue
+                    if linha[0] == "c" and linha[2] == "vertices":
+                        self.V = int(linha[1])
+                        self.E = 0
+                        self.v_adj = {}
+                        for i in range(1, self.V + 1):
+                            self.v_adj[i] = []
+                        self.arestas = {}
+                        self.rotulos = {}
+                        self.flow_source = 1
+                        self.flow_sink = self.V
+                    elif linha[0] == "p" and linha[1] == "edge":
+                        self.V = int(linha[2])
+                        self.E = 0
+                        self.v_adj = {}
+                        for i in range(1, self.V + 1):
+                            self.v_adj[i] = []
+                        self.arestas = {}
+                        self.rotulos = {}
+                        nLinhasDet = True
+                        nLinhas -= int(linha[3])
+                    elif linha[0] == "p":
+                        nLinhasDet = True
+                        nLinhas -= int(linha[3])
+
+                    elif linha[0] == "a":
+                        a, b, c = map(int, linha[1:])
+                        nLinhas += 1
+                        self.addArco(a, b, c)
+                    elif linha[0] == "e":
+                        a, b = map(int, linha[1:])
+                        nLinhas += 1
+                        self.addAresta(a, b, 1)
+                    elif linha[0] == "n":
+                        if linha[2] == "s":
+                            self.flow_source = int(linha[1])
+                        elif linha[2] == "t":
+                            self.flow_sink = int(linha[1])
+                except EOFError:
+                    break
         file.close()
 
 
@@ -80,38 +133,16 @@ class Graph:
             return self.arestas[(u, v)]
         return (float("inf"))
 
-    def bipartir(self, s):
-        # conjuntos 0 e 1
-
-        conjuntos = [-1] * (self.V + 1)
-
-        fila = []
-        fila.append(s)
-        conjuntos[s] = 0
-
-        while len(fila) != 0:
-            v = fila.pop(0)
-
-            for u in self.v_adj[v]:
-                if conjuntos[u] == -1:
-                    conjuntos[u] = 1 - conjuntos[v]
-                    fila.append(u)
-                elif conjuntos[u] == conjuntos[v]:
-                    print ("Grafo não bipartido!")
-                    return
-        X = [i for i in range(1, self.V + 1) if conjuntos[i] == 0 or conjuntos[i] == -1]
-        Y = [i for i in range(1, self.V + 1) if conjuntos[i] == 1]
-        return X, Y
-
     def hopcroft_karp(self):
         dist = [float("inf")] * (self.V + 1)
         mate = [None] * (self.V + 1)
 
         m = 0
-        X, Y = self.bipartir(1)
+        X = [i for i in range(1, self.V//2 + 1)]
+        Y = [i for i in range(self.V//2 + 1, self.V + 1)]
 
         while self.bfs_hk(X, mate, dist):
-            #dividir o grafo em X
+            # dividir o grafo em X
             for x in X:
                 if mate[x] == None:
                     if self.dfs_hk(X, mate, x, dist):
@@ -152,7 +183,8 @@ class Graph:
     def dfs_hk(self, X, mate, x, dist):
         if x != None:
             for y in self.v_adj[x]:
-                if (mate[y] == None and dist[0] == dist[x] + 1) or dist[mate[y]] == dist[x] + 1:
+                # print("mate[" + str(y) +"] = " + str(mate[y]) + " , dist[" + str(x) + "]")
+                if (mate[y] == None and dist[0] == dist[x] + 1) or (mate[y] != None and dist[mate[y]] == dist[x] + 1):
                     if (self.dfs_hk(X, mate, mate[y], dist)):
                         mate[y] = x
                         mate[x] = y
@@ -162,14 +194,18 @@ class Graph:
         return True
 
 
-    def edmonds_karp(self, s, t):
+    def edmonds_karp(self):
         rede_residual = {}
+        s = self.flow_source
+        t = self.flow_sink
+        # print("de " + str(s) + " até " + str(t))
         for (u, v) in self.arestas.keys():
             rede_residual[(u, v)] = self.arestas[(u, v)]
             rede_residual[(v, u)] = 0
+        # print(rede_residual)
         p = self.bfs_ek(s, t, rede_residual)
         while (p != None):
-            print(p)
+            # print(p)
             u = p[0]
             v = -1
             fluxo_total = float("inf")
@@ -178,7 +214,7 @@ class Graph:
                 fluxo_total = min(fluxo_total, rede_residual[(u, v)])
                 u = v
 
-            print(fluxo_total)
+            # print(fluxo_total)
             u = p[0]
             v = -1
             for i in range(1, len(p)):
@@ -190,7 +226,7 @@ class Graph:
 
                 u = v
             p = self.bfs_ek(s, t, rede_residual)
-        print(rede_residual)
+        # print(rede_residual)
         fluxo_total = 0
         for i in range(1, self.V + 1):
             if (t, i) in rede_residual.keys() and not (t, i) in self.arestas.keys():
@@ -316,4 +352,6 @@ class Graph:
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 
-grafo.lawler()
+# grafo.edmonds_karp()
+
+grafo.hopcroft_karp()
