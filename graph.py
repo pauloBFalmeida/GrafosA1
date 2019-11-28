@@ -103,14 +103,13 @@ class Graph:
         Y = [i for i in range(1, self.V + 1) if conjuntos[i] == 1]
         return X, Y
 
-
-
     def hopcroft_karp(self):
         dist = [float("inf")] * (self.V + 1)
         mate = [None] * (self.V + 1)
 
         m = 0
         X, Y = self.bipartir(1)
+
         while self.bfs_hk(X, mate, dist):
             #dividir o grafo em X
             for x in X:
@@ -118,7 +117,6 @@ class Graph:
                     if self.dfs_hk(X, mate, x, dist):
                         m += 1
 
-        # return m, mate
         print ("Emparelhamento máximo: " + str(m))
 
         str_arestas = ""
@@ -166,12 +164,9 @@ class Graph:
 
     def edmonds_karp(self, s, t):
         rede_residual = {}
-        rr_adj = {}
         for (u, v) in self.arestas.keys():
             rede_residual[(u, v)] = self.arestas[(u, v)]
             rede_residual[(v, u)] = 0
-        # print (self.bfs_ek(2, 5, rede_residual))
-        # print(rede_residual)
         p = self.bfs_ek(s, t, rede_residual)
         while (p != None):
             print(p)
@@ -190,17 +185,11 @@ class Graph:
 
                 v = p[i]
 
-                # print((u, v))
-                # if (u, v) in self.arestas.keys():
                 rede_residual[(u, v)] = rede_residual[(u, v)] - fluxo_total
                 rede_residual[(v, u)] = rede_residual[(v, u)] + fluxo_total
-                # else:
-                    # rede_residual[(u, v)] = rede_residual[(u, v)] - fluxo_total
-                    # rede_residual[(v, u)] = rede_residual[(v, u)] + fluxo_total
+
                 u = v
-            # p = None
             p = self.bfs_ek(s, t, rede_residual)
-            # print (rede_residual)
         print(rede_residual)
         fluxo_total = 0
         for i in range(1, self.V + 1):
@@ -234,19 +223,8 @@ class Graph:
         return None
 
 
-
-    # def all_subsets(self, n):
-    #     if (n == 0):
-    #         return [[]]
-    #     conj = self.all_subsets(n-1)
-    #
-    #     saida = []
-    #     for i in range(len(conj)):
-    #         saida.append(conj[i] + [n])
-    #         saida.append(conj[i])
-    #     return saida
-
     def all_subsets(self, lst):
+        # todos os subconjuntos de um conjunto representado por uma lista
         if lst == []:
             return [[]]
         conj = self.all_subsets(lst[:-1])
@@ -258,7 +236,7 @@ class Graph:
         return saida
 
     def is_independent_set(self, v_set):
-
+        # checa se o conjunto de vértices forma um conjunto independente
         for i in range(len(v_set)):
             for j in range(len(v_set)):
                 if j != i:
@@ -267,24 +245,24 @@ class Graph:
         return True
 
     def all_max_indepedent_sets(self, vert):
+        # arranjamos todos os subconjuntos do maior para o menor
         vert_sets = sorted(self.all_subsets(vert), key = len, reverse=True)
-        # print(vert_sets)
 
-        max = -1
+        max = -1 # cardinalidade do subconjunto independente máximo
 
         ind_sets = []
 
         for i in range(len(vert_sets)):
+            # depois de acharmos um, ignoramos os menores
             if (len(vert_sets[i]) < max):
                 break
             if self.is_independent_set(vert_sets[i]):
-                # print("independent:")
-                # print(vert_sets[i])
                 max = len(vert_sets[i])
                 ind_sets.append(vert_sets[i])
 
         return ind_sets
 
+    # essa função mapeia os subconjuntos para sua posição no vetor
     def ord_function(self, set):
         ind = 0
         for i in range(1, self.V+1):
@@ -292,6 +270,7 @@ class Graph:
                 ind += 2**(i-1)
         return ind
 
+    # uma subtração típica de conjuntos
     def set_delete(self, S, I):
         new_set = []
         for i in S:
@@ -302,20 +281,29 @@ class Graph:
     def lawler(self):
         x = [0] * (2**(self.V))
         cor_set = [[]] * (2**self.V)
+        # obtemos todos os subconjuntos, ordenados em tamanho
         SS = sorted(self.all_subsets([i for i in range(1, self.V + 1)]), key = len)
-        # print(S)
+
+        # para cada subconjunto
         for S in SS:
             if S == []:
                 continue
+
+            # obtemos a posição do subconjunto
             s = self.ord_function(S)
             x[s] = float("inf")
+
+            # descobrimos todos os conjuntos independentes maximais do subgrafo
             g_vert = S.copy()
             ind_sets = self.all_max_indepedent_sets(g_vert)
+
+            # para cada um dos conjuntos, checamos se temos um modo de colorir com menos cores o conjunto S
             for I in ind_sets:
                 i = self.ord_function(self.set_delete(S, I))
                 if x[i] + 1 < x[s]:
                     x[s] = x[i] + 1
                     cor_set[s] = I
+
         print (x[2**(self.V) - 1])
         S = SS[-1]
         while S != []:
@@ -323,30 +311,9 @@ class Graph:
             S = self.set_delete(S, cor_set[self.ord_function(S)])
 
 
-            # g_arest = []
-            # for u in S:
-            #     for v in S:
-            #         if u != v and (u, v) in self.arestas.keys():
-            #             g_arest.append((u, v))
-
 
 # ler objeto
 nome_do_arquivo = input()
 grafo = Graph(nome_do_arquivo)
 
-# grafo.hopcroft_karp()
-# s = int(input())
-# t = int(input())
-# grafo.edmonds_karp(s, t)
-print(grafo.lawler())
-
-# print(grafo.all_subsets(t))
-# grafo.lawler()
-# grafo.ord_function([])
-# while (True):
-    # m = list(map(int, input().split()))
-    # l = list(map(int, input().split()))
-    # print(grafo.set_delete(l, m))
-    # print(grafo.is_independent_set(l))
-    # print(sorted(grafo.all_subsets(l), key = len))
-    # print(grafo.all_max_indepedent_sets(l))
+grafo.lawler()
