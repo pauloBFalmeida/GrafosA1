@@ -41,12 +41,12 @@ class Graph:
                 except EOFError:
                     break
         else:
+            # lê o formato dos arquivos de fluxo/emparelhamento
             nLinhas = 0
             nLinhasDet = False
             while (True):
                 try:
                     linha = file.readline().split()
-                    # print("leu: " + linha)
                     if (nLinhas == 0 and nLinhasDet):
                         break
                     if linha == []:
@@ -133,17 +133,20 @@ class Graph:
             return self.arestas[(u, v)]
         return (float("inf"))
 
+
     def hopcroft_karp(self):
         dist = [float("inf")] * (self.V + 1)
         mate = [None] * (self.V + 1)
 
         m = 0
+        # definimos a bipartição esperada
         X = [i for i in range(1, self.V//2 + 1)]
         Y = [i for i in range(self.V//2 + 1, self.V + 1)]
 
+        # enquanto achamos um modo de aumentar o número de emparelhamentos
         while self.bfs_hk(X, mate, dist):
-            # dividir o grafo em X
             for x in X:
+                # atualizamos
                 if mate[x] == None:
                     if self.dfs_hk(X, mate, x, dist):
                         m += 1
@@ -165,6 +168,8 @@ class Graph:
                 fila.append(x)
             else:
                 dist[x] = float("inf")
+
+        # usamos 0 como o vértice nulo
         dist[0] = float("inf")
 
         while len(fila) != 0:
@@ -183,7 +188,6 @@ class Graph:
     def dfs_hk(self, X, mate, x, dist):
         if x != None:
             for y in self.v_adj[x]:
-                # print("mate[" + str(y) +"] = " + str(mate[y]) + " , dist[" + str(x) + "]")
                 if (mate[y] == None and dist[0] == dist[x] + 1) or (mate[y] != None and dist[mate[y]] == dist[x] + 1):
                     if (self.dfs_hk(X, mate, mate[y], dist)):
                         mate[y] = x
@@ -196,16 +200,18 @@ class Graph:
 
     def edmonds_karp(self):
         rede_residual = {}
+
         s = self.flow_source
         t = self.flow_sink
-        # print("de " + str(s) + " até " + str(t))
+
+        # inicializamos a rede residual
         for (u, v) in self.arestas.keys():
             rede_residual[(u, v)] = self.arestas[(u, v)]
             rede_residual[(v, u)] = 0
-        # print(rede_residual)
+
+        # repetimos enquanto acharmos um caminho aumentante
         p = self.bfs_ek(s, t, rede_residual)
         while (p != None):
-            # print(p)
             u = p[0]
             v = -1
             fluxo_total = float("inf")
@@ -214,19 +220,20 @@ class Graph:
                 fluxo_total = min(fluxo_total, rede_residual[(u, v)])
                 u = v
 
-            # print(fluxo_total)
             u = p[0]
             v = -1
             for i in range(1, len(p)):
 
                 v = p[i]
 
+                # atualizamos diretamente na rede residual
                 rede_residual[(u, v)] = rede_residual[(u, v)] - fluxo_total
                 rede_residual[(v, u)] = rede_residual[(v, u)] + fluxo_total
 
                 u = v
             p = self.bfs_ek(s, t, rede_residual)
-        # print(rede_residual)
+
+        # obtemos o fluxo total somando o fluxo que entrou no sorvedouro
         fluxo_total = 0
         for i in range(1, self.V + 1):
             if (t, i) in rede_residual.keys() and not (t, i) in self.arestas.keys():
@@ -246,11 +253,13 @@ class Graph:
             u = fila.pop(0)
             for v in range(1, self.V + 1):
                 if (u, v) in rede_residual.keys() and rede_residual[(u, v)] > 0 and not visitados[v]:
+                    # pelos arcos onde ainda pode passar fluxo
                     visitados[v] = True
                     ancestrais[v] = u
-                    if v == t:
+                    if v == t: # caminho encontrado
                         p = [t]
                         w = t
+                        # armazenamos o caminho
                         while w != s:
                             w = ancestrais[w]
                             p.insert(0, w)
@@ -305,6 +314,14 @@ class Graph:
             if i in set:
                 ind += 2**(i-1)
         return ind
+    # e esta mapeia de volta
+    def inv_function(self, n):
+        set = []
+        for i in range(self.V, 0, -1):
+            if n >= 2**(i-1):
+                set.insert(0, i)
+                n -= 2**(i-1)
+        return set
 
     # uma subtração típica de conjuntos
     def set_delete(self, S, I):
@@ -316,7 +333,7 @@ class Graph:
 
     def lawler(self):
         x = [0] * (2**(self.V))
-        cor_set = [[]] * (2**self.V)
+        cor_set = [0] * (2**self.V)
         # obtemos todos os subconjuntos, ordenados em tamanho
         SS = sorted(self.all_subsets([i for i in range(1, self.V + 1)]), key = len)
 
@@ -338,13 +355,19 @@ class Graph:
                 i = self.ord_function(self.set_delete(S, I))
                 if x[i] + 1 < x[s]:
                     x[s] = x[i] + 1
-                    cor_set[s] = I
+                    cor_set[s] = self.ord_function(I)
 
         print (x[2**(self.V) - 1])
         S = SS[-1]
+        cor = 1
+        cores = [0] * (self.V + 1)
         while S != []:
-            print(cor_set[self.ord_function(S)])
-            S = self.set_delete(S, cor_set[self.ord_function(S)])
+            for i in self.inv_function(cor_set[self.ord_function(S)]):
+                cores[i] = cor
+            cor += 1
+            S = self.set_delete(S, self.inv_function(cor_set[self.ord_function(S)]))
+        for i in range(1, self.V + 1):
+            print(self.rotulos[i] + ": " + str(cores[i]))
 
 
 
@@ -354,4 +377,6 @@ grafo = Graph(nome_do_arquivo)
 
 # grafo.edmonds_karp()
 
-grafo.hopcroft_karp()
+# grafo.hopcroft_karp()
+
+# grafo.lawler()
